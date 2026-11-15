@@ -1,177 +1,76 @@
-<p align="center"> <img src="https://capsule-render.vercel.app/api?type=waving&color=0:1e3c72,100:2a5298&height=200&section=header&text=REVHIRE%20P2&fontSize=45&fontColor=ffffff&animation=fadeIn&fontAlignY=35"/> </p> <p align="center"> <b>💼 Full-Stack Monolithic Job Portal Web Application</b><br> <i>Revature Training Program | Phase 2 Project | PES Mandya Batch</i> </p> <p align="center"> <a href="https://github.com/RevHire-Team"> <img src="https://img.shields.io/badge/Organization-RevHire%20Team-black?style=for-the-badge&logo=github"/> </a> <img src="https://img.shields.io/badge/Status-Active%20Development-blue?style=for-the-badge"/> <img src="https://img.shields.io/badge/Architecture-Layered%20Monolithic-orange?style=for-the-badge"/> </p>
+<p align="center"> <img src="https://capsule-render.vercel.app/api?type=waving&color=0:1e3c72,100:2a5298&height=200&section=header&text=REVHIRE%20%E2%80%93%20SD&fontSize=45&fontColor=ffffff&animation=fadeIn&fontAlignY=35"/> </p> <p align="center"> <b>🧪 RevHire WebApplication – Fork per il corso di Software Dependability</b><br> <i>Università degli Studi di Salerno</i> </p> <p align="center"> <a href="https://github.com/RevHire-Team/RevHire_WebApplication"> <img src="https://img.shields.io/badge/Progetto%20originale-RevHire%20Team-black?style=for-the-badge&logo=github"/> </a> <a href="https://github.com/alessiagatto/-SD-RevHire_WebApplication/actions/workflows/ci.yml"> <img src="https://img.shields.io/github/actions/workflow/status/alessiagatto/-SD-RevHire_WebApplication/ci.yml?branch=main&style=for-the-badge&label=CI&logo=githubactions&logoColor=white"/> </a> <img src="https://img.shields.io/badge/Corso-Software%20Dependability-blue?style=for-the-badge"/> </p>
 
 ---
 
-# 🛍️ Welcome to RevHire P2 WebApplication
+# 🛍️ Cos'è questa repository
 
-RevHire P2 is a full-stack monolithic job portal web application developed as part of the Revature Training Program (Phase 2) by the PES Mandya Batch.
+Questa repository è un **fork** di [RevHire WebApplication](https://github.com/RevHire-Team/RevHire_WebApplication) ed è usata come caso di studio per il corso di **Software Dependability** dell'**Università degli Studi di Salerno**.
 
-The platform connects Job Seekers and Employers, enabling structured resume creation, advanced job search, job application tracking, employer dashboards, and real-time notifications using enterprise-level development practices.
+RevHire è un portale di ricerca del lavoro che mette in contatto **candidati** e **aziende**: i candidati cercano offerte e si candidano, le aziende pubblicano annunci e gestiscono le candidature.
 
-🔗 Organization: https://github.com/RevHire-Team
+> 🙏 Il progetto è opera del team [RevHire-Team](https://github.com/RevHire-Team). Per la descrizione completa si rimanda al loro [README ufficiale](https://github.com/RevHire-Team/RevHire_WebApplication/blob/main/README.md).
 
 ---
 
-# 🚀 Tech Stack & Tools
+# 🚀 Tecnologie
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Java-ED8B00?style=for-the-badge&logo=java&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Spring%20MVC-6DB33F?style=for-the-badge&logo=spring&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Spring%20Data%20JPA-6DB33F?style=for-the-badge"/>
-  <img src="https://img.shields.io/badge/Spring%20Security-6DB33F?style=for-the-badge&logo=springsecurity&logoColor=white"/>
-  <img src="https://img.shields.io/badge/Oracle%20DB-F80000?style=for-the-badge&logo=oracle&logoColor=white"/>
-  <img src="https://img.shields.io/badge/JDBC-000000?style=for-the-badge"/>
+  <img src="https://img.shields.io/badge/Java%2021-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white"/>
+  <img src="https://img.shields.io/badge/Spring%20Boot-6DB33F?style=for-the-badge&logo=springboot&logoColor=white"/>
   <img src="https://img.shields.io/badge/Thymeleaf-005F0F?style=for-the-badge&logo=thymeleaf&logoColor=white"/>
-</p>
-
-<p align="center">
-  <img src="https://img.shields.io/badge/Jenkins-D24939?style=for-the-badge&logo=jenkins&logoColor=white"/>
-  <img src="https://img.shields.io/badge/SonarQube-4E9BCD?style=for-the-badge&logo=sonarqube&logoColor=white"/>
-  <img src="https://img.shields.io/badge/JUnit-25A162?style=for-the-badge"/>
-  <img src="https://img.shields.io/badge/Mockito-FFCA28?style=for-the-badge"/>
-  <img src="https://img.shields.io/badge/JaCoCo-BB0000?style=for-the-badge"/>
+  <img src="https://img.shields.io/badge/Oracle%20DB-F80000?style=for-the-badge&logo=oracle&logoColor=white"/>
   <img src="https://img.shields.io/badge/Maven-C71A36?style=for-the-badge&logo=apache-maven&logoColor=white"/>
+  <img src="https://img.shields.io/badge/GitHub%20Actions-2088FF?style=for-the-badge&logo=githubactions&logoColor=white"/>
 </p>
 
 ---
 
-# 🏗️ Architecture & Design
+# 🧪 Laboratori di Dependability
 
-✨ Enterprise-Level System Design:
-
-- Layered Monolithic Architecture  
-- MVC (Model-View-Controller) Design Pattern  
-- Secure Authentication & Role-Based Access Control  
--  Oracle Database with PL/SQL Integration  
-- Logging & Exception Handling  
-- CI/CD Integration using Jenkins  
-- Automated Testing & Code Quality Enforcement  
-- SonarQube, PMD, Checkstyle & JaCoCo Integration  
+- ✅ **Lab 1** – CI workflow → [CI.md](CI.md)
 
 ---
 
-# 👤 Job Seeker Functionalities
+# ⚙️ Installazione
 
-- Registration & Secure Login
-- Structured Resume Builder:  
-    - Objective
-    - Education
-    - Experience
-    - Skills
-    - Projects
-    - Certifications
--  Resume Upload (PDF/DOCX – max 2MB)
--  Advanced Job Search with Dynamic Filters  
--  One-Click Job Application 
--  Application Status Tracking  
--  Withdraw Applications
--  Save Jobs to Favourites
--  In-App Notifications
--  Profile Management
+**Requisiti:** Git e JDK 21. Maven non va installato: il repository include il Maven Wrapper (`mvnw`).
 
----
+1. 📥 Clona il repository:
 
-# 🏢 Employer Functionalities
+   ```bash
+   git clone https://github.com/alessiagatto/-SD-RevHire_WebApplication.git
+   cd -SD-RevHire_WebApplication
+   ```
 
-- Company Registration & Authentication  
-- Create & Manage Job Postings
-- Edit, Close, Reopen, Delete Jobs  
-- View Applicant Details  
-- Shortlist / Reject Applications
-- Add Internal Notes
-- Filter Applicants by Skills & Experience
-- Employer Dashboard:
-   - Total Jobs
-   - Active Jobs
-   - Total Applications
-   - Pending Reviews
+2. 🗄️ Configura il database. L'applicazione originale usa **Oracle DB**: imposta URL, utente e password nel file di configurazione Spring in `src/main/resources/`.
+
+3. 🧪 Compila ed esegui i test (su Windows usa `mvnw.cmd` al posto di `./mvnw`):
+
+   ```bash
+   ./mvnw clean test -Dspring.profiles.active=test
+   ```
+
+4. ▶️ Genera il JAR e avvia l'applicazione:
+
+   ```bash
+   ./mvnw package -DskipTests
+   java -jar target/RevHire_WebApplication-1.0.0.jar
+   ```
 
 ---
 
-# 🧰 Core Modules
-
-- Authentication & Account Management  
-- Resume Management System  
-- Job Posting & Application Workflow  
-- Employer Dashboard & Statistics 
-- Notification System  
-- Role-Based Access Control
-- Exception Handling & Validation
-
----
-
-# 👥 Group Members 
+# 👥 Team
 
 <p align="center">
-
-<a href="https://github.com/AmeerShaikh2MM21CS004">
-
-[//]: # (  <img src="https://github.com/shanthankumar05.png" width="80" style="border-radius:50%;" />)
-</a>
-<a href="https://github.com/Ranaprathap19">
-
-[//]: # (  <img src="https://github.com/Akshaya150803.png" width="80" style="border-radius:50%;" />)
-</a>
-<a href="https://github.com/AnumandlaManashwini">
-
-[//]: # (  <img src="https://github.com/Mutluru-Prashanth.png" width="80" style="border-radius:50%;" />)
-</a>
-<a href="https://github.com/Dharmagithubit">
-
-[//]: # (  <img src="https://github.com/GunashreeB02.png" width="80" style="border-radius:50%;" />)
-</a>
-<a href="https://github.com/Damarkeswar">
-
-[//]: # (  <img src="https://github.com/abdulkareemmomin.png" width="80" style="border-radius:50%;" />)
-</a>
-
+  <a href="https://github.com/Boneelli"><b>Alessandro Bonelli</b></a> •
+  <a href="https://github.com/alessiagatto"><b>Alessia Gatto</b></a> •
+  <a href="https://github.com/elisapic13"><b>Elisa Picilli</b></a>
 </p>
-
-<p align="center">
-  <b>Ameer Shaikh</b> • 
-  <b>Rana Prathap</b> • 
-  <b>AnumandlaManashwini</b> • 
-  <b>Dharmashri</b> • 
-  <b>Damarkeswara Reddy Siripireddy</b>
-</p>
-
-
 
 ---
 
-📂 Project Structure
+# 📂 Informazioni
 
-````
-src
-├── main
-│    ├── java/com/RevHire
-│    │     ├── controller
-│    │     ├── service
-│    │     ├── repository
-│    │     ├── entity
-│    │     ├── security
-│    │     ├── dto
-│    │     ├── config
-│    │     └── exception
-│    └── resources
-│
-└── test
-└── java/com/RevHire
-├── controller
-├── service
-└── repository
-````
-
-# 📂 Repository Information
-
-- 🔗 Organization: https://github.com/RevHire-Team  
-- 📦 Project: RevHire P2 (Job Portal Application)  
-- 🏫 Batch: PES Mandya – Revature Java Full Stack Training Program  
-- 🛠️ Architecture: Layered Monolithic (Spring Boot MVC)  
-
----
-
-# 🔒 Note
-
-> 🚧 Repo is Private and Actively under development.  
-> This organization contains all repositories related to the **P2 – RevHire implementation**.
+- 🔗 Progetto originale: https://github.com/RevHire-Team/RevHire_WebApplication
+- 👨‍💻 Sviluppatori originali: https://github.com/RevHire-Team
+- 🏫 Corso: Software Dependability – Università degli Studi di Salerno
