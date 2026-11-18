@@ -18,6 +18,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
+      - name: Download JAR from CI Pipeline
+        uses: actions/download-artifact@v4
+        with:
+          name: revhire-${{ github.event.workflow_run.head_sha }}
+          path: target/
+          run-id: ${{ github.event.workflow_run.id }}
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
