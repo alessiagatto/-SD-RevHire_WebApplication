@@ -27,7 +27,8 @@ RevHire è un portale di ricerca del lavoro che mette in contatto **candidati** 
 
 # 🧪 Laboratori di Dependability
 
-- ✅ **Lab 1** – CI workflow → [CI.md](CI.md)
+- ✅ **Lab 1** – CI workflow → [CI.md](documentation/CI.md)
+- ✅ **Lab 2** – Docker e Docker compose → [Docker.md](documentation/Docker.md)
 
 ---
 
