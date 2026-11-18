@@ -1,0 +1,46 @@
+services:
+  # 1. SERVIZIO DATABASE (Oracle Database Free)
+  db:
+    image: gvenzl/oracle-free:23-slim-faststart
+    container_name: revhire-oracle-db
+    restart: on-failure
+    environment:
+      ORACLE_PASSWORD: ${ORACLE_PASSWORD}
+      APP_USER: ${APP_USER}
+      APP_USER_PASSWORD: ${APP_USER_PASSWORD}
+    volumes:
+      - oracle_data:/opt/oracle/oradata
+      # Opzionale: se hai uno script SQL per creare le tabelle all'avvio, scommenta la riga sotto:
+      # - ./schema.sql:/container-entrypoint-initdb.d/01-schema.sql
+    networks:
+      - revhire-network
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+
+  # 2. SERVIZIO APPLICAZIONE WEB (Spring Boot)
+  web:
+    build: .
+    container_name: revhire-web
+    restart: on-failure
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:oracle:thin:@//db:1521/FREEPDB1
+      SPRING_DATASOURCE_USERNAME: ${DB_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${ORACLE_PASSWORD}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - revhire-network
+
+volumes:
+  oracle_data:
+
+networks:
+  revhire-network:
