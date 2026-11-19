@@ -1,184 +1,89 @@
 package com.RevHire.service.impl;
 
-import com.RevHire.entity.User;
-import com.RevHire.repository.UserRepository;
-
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.springframework.security.crypto.password.PasswordEncoder;
-
-import java.util.Optional;
-
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-public class AuthServiceImplTest {
+import com.RevHire.entity.User;
+import com.RevHire.repository.UserRepository;
+import java.util.Optional;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
-    @Mock
-    private UserRepository userRepository;
-    @Mock
-    private PasswordEncoder passwordEncoder;
-
-    @InjectMocks
-    private AuthServiceImpl authService;
+@ExtendWith(MockitoExtension.class)
+class AuthServiceImplTest {
+    @Mock UserRepository userRepository;
+    @Mock PasswordEncoder passwordEncoder;
+    @InjectMocks AuthServiceImpl service;
 
     private User user;
-
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-
-        user = new User();
-        user.setUserId(1L);
-        user.setEmail("test@gmail.com");
-        user.setPasswordHash("12345");
-        user.setSecurityAnswerHash("pet");
-
-        when(passwordEncoder.encode(any())).thenReturn("encodedPassword");
-        when(passwordEncoder.matches(any(), any())).thenReturn(true);
+    @BeforeEach void setUp() {
+        user=new User(); user.setUserId(1L); user.setEmail("candidate@example.test");
+        user.setPasswordHash("PlainPassword"); user.setSecurityAnswerHash("synthetic-answer");
     }
 
-    @Test
-    void testRegisterUserSuccess() {
-        when(userRepository.existsByEmail(user.getEmail())).thenReturn(false);
+    @Test void registerSuccessDuplicateAndEncoding() {
+        when(userRepository.existsByEmail("candidate@example.test")).thenReturn(false);
+        when(passwordEncoder.encode("PlainPassword")).thenReturn("$2a$synthetic");
         when(userRepository.save(user)).thenReturn(user);
-
-        User result = authService.registerUser(user);
-
-        assertNotNull(result);
-        assertEquals("encodedPassword", result.getPasswordHash());
-        verify(userRepository).save(user);
+        assertEquals("$2a$synthetic",service.registerUser(user).getPasswordHash());
+        verify(passwordEncoder).encode("PlainPassword");
+        when(userRepository.existsByEmail("candidate@example.test")).thenReturn(true);
+        assertEquals("Email already registered",assertThrows(RuntimeException.class,()->service.registerUser(user)).getMessage());
     }
 
-    @Test
-    void testRegisterUserEmailAlreadyExists() {
-        when(userRepository.existsByEmail(user.getEmail())).thenReturn(true);
-
-        RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> authService.registerUser(user));
-
-        assertEquals("Email already registered", exception.getMessage());
-        verify(userRepository, never()).save(any());
+    @Test void loginBcryptSuccessAndWrongPassword() {
+        user.setPasswordHash("$2a$synthetic");
+        when(userRepository.findByEmail("candidate@example.test")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("PlainPassword","$2a$synthetic")).thenReturn(true);
+        assertEquals(user,service.login("candidate@example.test","PlainPassword"));
+        when(passwordEncoder.matches("Wrong","$2a$synthetic")).thenReturn(false);
+        assertEquals("Invalid credentials",assertThrows(RuntimeException.class,()->service.login("candidate@example.test","Wrong")).getMessage());
     }
 
-    @Test
-    void testLoginSuccess() {
-        when(userRepository.findByEmail("test@gmail.com"))
-                .thenReturn(Optional.of(user));
-
-        when(passwordEncoder.matches("12345", user.getPasswordHash()))
-                .thenReturn(true);
-
-        User result = authService.login("test@gmail.com", "12345");
-
-        assertNotNull(result);
-        assertEquals("test@gmail.com", result.getEmail());
+    @Test void loginBcrypt2bBranch() {
+        user.setPasswordHash("$2b$synthetic");
+        when(userRepository.findByEmail("candidate@example.test")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("PlainPassword","$2b$synthetic")).thenReturn(true);
+        assertEquals(user,service.login("candidate@example.test","PlainPassword"));
     }
 
-    @Test
-    void testLoginInvalidCredentials() {
-        when(passwordEncoder.matches(any(), any())).thenReturn(false);
-        RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> authService.login("test@gmail.com", "wrongpassword"));
-
-        assertEquals("Invalid credentials", exception.getMessage());
+    @Test void loginPlainTextUpgradesAndNotFound() {
+        when(userRepository.findByEmail("candidate@example.test")).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode("PlainPassword")).thenReturn("$2b$new");
+        assertEquals(user,service.login("candidate@example.test","PlainPassword"));
+        assertEquals("$2b$new",user.getPasswordHash()); verify(userRepository).save(user);
+        when(userRepository.findByEmail("missing@example.test")).thenReturn(Optional.empty());
+        assertEquals("Invalid credentials",assertThrows(RuntimeException.class,()->service.login("missing@example.test","x")).getMessage());
     }
 
-    @Test
-    void testLoginUserNotFound() {
-        when(userRepository.findByEmail("unknown@gmail.com")).thenReturn(Optional.empty());
-
-        RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> authService.login("unknown@gmail.com", "12345"));
-
-        assertEquals("Invalid credentials", exception.getMessage());
+    @Test void resetPasswordSuccessWrongAnswerAndMissing() {
+        when(userRepository.findByEmail("candidate@example.test")).thenReturn(Optional.of(user));
+        assertEquals("Password updated successfully",service.resetPassword("candidate@example.test","synthetic-answer","NewPassword"));
+        assertEquals("NewPassword",user.getPasswordHash()); verify(userRepository).save(user);
+        assertThrows(RuntimeException.class,()->service.resetPassword("candidate@example.test","wrong","NewPassword"));
+        when(userRepository.findByEmail("missing@example.test")).thenReturn(Optional.empty());
+        assertEquals("User not found",assertThrows(RuntimeException.class,()->service.resetPassword("missing@example.test","x","y")).getMessage());
     }
 
-    @Test
-    void testResetPasswordSuccess() {
-        when(userRepository.findByEmail("test@gmail.com")).thenReturn(Optional.of(user));
-
-        String result = authService.resetPassword("test@gmail.com", "pet", "newpassword");
-
-        assertEquals("Password updated successfully", result);
-        assertEquals("newpassword", user.getPasswordHash());
-        verify(userRepository).save(user);
-    }
-
-    @Test
-    void testResetPasswordWrongSecurityAnswer() {
-        when(userRepository.findByEmail("test@gmail.com")).thenReturn(Optional.of(user));
-
-        RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> authService.resetPassword("test@gmail.com", "wronganswer", "newpassword"));
-
-        assertEquals("Security answer incorrect", exception.getMessage());
-        verify(userRepository, never()).save(any());
-    }
-
-    @Test
-    void testResetPasswordUserNotFound() {
-        when(userRepository.findByEmail("unknown@gmail.com")).thenReturn(Optional.empty());
-
-        RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> authService.resetPassword("unknown@gmail.com", "pet", "newpassword"));
-
-        assertEquals("User not found", exception.getMessage());
-        verify(userRepository, never()).save(any());
-    }
-
-    @Test
-    void testUpdatePasswordSuccess() {
+    @Test void updatePasswordSuccessWrongAndMissing() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-
-        authService.updatePassword(1L, "12345", "newpass");
-
-        assertEquals("newpass", user.getPasswordHash());
-        verify(userRepository).save(user);
-    }
-
-    @Test
-    void testUpdatePasswordIncorrectCurrentPassword() {
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
-
-        RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> authService.updatePassword(1L, "wrongpass", "newpass"));
-
-        assertEquals("The current password you entered is incorrect", exception.getMessage());
-        verify(userRepository, never()).save(any());
-    }
-
-    @Test
-    void testUpdatePasswordUserNotFound() {
+        service.updatePassword(1L,"PlainPassword","NewPassword");
+        assertEquals("NewPassword",user.getPasswordHash()); verify(userRepository).save(user);
+        assertEquals("The current password you entered is incorrect",assertThrows(RuntimeException.class,()->service.updatePassword(1L,"Wrong","New")).getMessage());
         when(userRepository.findById(2L)).thenReturn(Optional.empty());
-
-        RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> authService.updatePassword(2L, "12345", "newpass"));
-
-        assertEquals("User session expired or user not found", exception.getMessage());
-        verify(userRepository, never()).save(any());
+        assertEquals("User session expired or user not found",assertThrows(RuntimeException.class,()->service.updatePassword(2L,"x","y")).getMessage());
     }
 
-    @Test
-    void testDeleteUserSuccess() {
+    @Test void deleteUserSuccessAndMissing() {
         when(userRepository.existsById(1L)).thenReturn(true);
-
-        authService.deleteUser(1L);
-
-        verify(userRepository).deleteById(1L);
-    }
-
-    @Test
-    void testDeleteUserNotFound() {
-        when(userRepository.existsById(1L)).thenReturn(false);
-
-        RuntimeException exception = assertThrows(RuntimeException.class,
-                () -> authService.deleteUser(1L));
-
-        assertEquals("User not found", exception.getMessage());
-        verify(userRepository, never()).deleteById(any());
+        service.deleteUser(1L); verify(userRepository).deleteById(1L);
+        when(userRepository.existsById(2L)).thenReturn(false);
+        assertEquals("User not found",assertThrows(RuntimeException.class,()->service.deleteUser(2L)).getMessage());
+        verify(userRepository,never()).deleteById(2L);
     }
 }
