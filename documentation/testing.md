@@ -1,17 +1,16 @@
 # Report sui test unitari – RevHire WebApplication
 
-Questo documento descrive la strategia di test unitari, l'applicazione dei principi FIRST e l'integrazione nella pipeline CI/CD adottati per **RevHire WebApplication**.
+Questo documento descrive la strategia di test unitari, l'applicazione dei principi FIRST e l'integrazione nella pipeline CI adottati per **RevHire WebApplication**.
 
 ---
 
 ## 1. Panoramica
 
-La suite di test unitari verifica in isolamento i componenti principali dello strato applicativo (`com.RevHire.service.impl`), garantendo che la logica di business, le regole di validazione e la gestione degli errori funzionino in modo deterministico senza dipendere da risorse esterne come il database Oracle o il filesystem reale.
+Il progetto disponeva già di una suite di test di base, ma si è scelto di potenziare e riscrivere in modo mirato i test del package `com.RevHire.service.impl`, lasciando invariati quelli già presenti negli altri package. Questa scelta deriva dal fatto che la logica di business, le validazioni critiche (duplicati, stati non validi, gestione file) e la gestione delle eccezioni risiedono nei *Service*, mentre `entity`/`dto` contengono solo strutture dati e i `repository` sono interfacce JPA già isolate tramite `@Mock`. In questo modo si massimizza l'affidabilità dei flussi critici mantenendo l'esecuzione veloce e indipendente da risorse esterne come il database Oracle o il filesystem reale.
 
 L'infrastruttura di test si basa su due strumenti principali configurati in `pom.xml`:
-- **JUnit 6 (`junit-jupiter:6.1.3`)**: framework di esecuzione e asserzione dei casi di test.
-- **Mockito 5 (`mockito-junit-jupiter:5.24.0`)**: libreria per la creazione di dipendenze simulate (`@Mock`), l'iniezione automatica nelle classi sotto test (`@InjectMocks`) e la verifica delle interazioni e degli argomenti salvati (`ArgumentCaptor`).
-
+- **JUnit 6 (`junit-jupiter:6.1.3`)**
+- **Mockito 5 (`mockito-junit-jupiter:5.24.0`)**
 ---
 
 ## 2. Principi FIRST e strategia di isolamento
@@ -28,16 +27,15 @@ Tutte le classi di test utilizzano `@ExtendWith(MockitoExtension.class)` per man
 
 ## 3. Suite di test e casi coperti
 
-Le classi di test sono state riviste e strutturate per coprire i branch rilevanti dei sette servizi applicativi:
+Le sette classi di test dei servizi applicativi sono state riviste per verificare non solo il funzionamento standard, ma anche i casi limite, le regole di validazione e la gestione degli errori:
 
-- **`AuthServiceImplTest`:** registrazione (successo, email duplicata, codifica password), login BCrypt (successo, password errata, prefisso `$2b`), login con password in chiaro con upgrade ad hash e utente inesistente, reset/aggiornamento password (successo, dati errati, utente assente) ed eliminazione utente.
-- **`JobServiceImplTest`:** creazione offerta (valori predefiniti `OPEN`/`active=true`, employer assente), recupero offerte aperte e filtraggio/ricerca con mapping DTO, chiusura/eliminazione/aggiornamento/toggle stato (`OPEN` ↔ `CLOSED`), ordinamento (`name`, `recent`, default) e raccomandazioni.
-- **`JobSeekerServiceImplTest`:** creazione/recupero/aggiornamento profilo, gestione e creazione automatica resume, upload file PDF ed errori I/O, preferiti (inclusi duplicati e mapping), notifiche/lettura/casi vuoti e ricerca/raccomandazioni.
-- **`ApplicationServiceImplTest`:** candidatura con/senza allegato, duplicati, entità mancanti, controlli su resume/file/appartenenza file, mapping per seeker/job/employer, ritiro candidatura, aggiornamento stato e notifiche (`SHORTLISTED`, `REJECTED`, altri stati) e note dell'employer.
-- **`ResumeServiceImplTest`:** CRUD resume, recupero per user/seeker/ID, gestione di education, experience, skill (inclusa sostituzione completa), certificazioni e progetti, upload/download/eliminazione/metadati file e generazione HTML con gestione delle assenze.
-- **`EmployerServiceImplTest`:** creazione/aggiornamento profilo, validazione email nulla/vuota, utente assente e conflitto email, recupero profilo, statistiche dashboard e calcolo percentuali di completamento.
-- **`NotificationServiceImplTest`:** invio notifica verificato con `ArgumentCaptor` (utente, messaggio, stato iniziale non letto), destinatario inesistente, mapping DTO/lista vuota e marcatura come letta.
-
+- **`AuthServiceImplTest`:** copre l'intero ciclo di gestione dell'account — registrazione con controllo sui duplicati, autenticazione con verifica e aggiornamento automatico delle password cifrate, recupero/modifica delle credenziali e rimozione dell'utente, includendo i casi di dati errati o account inesistenti.
+- **`JobServiceImplTest`:** verifica la gestione completa delle offerte di lavoro — pubblicazione con valori predefiniti, consultazione e ricerca filtrata, modifica, cambio di stato (`OPEN` ↔ `CLOSED`), eliminazione, ordinamento e suggerimenti mirati, gestendo anche l'assenza dell'azienda o dell'offerta.
+- **`JobSeekerServiceImplTest`:** testa le funzionalità principali del candidato — gestione del profilo, creazione automatica del curriculum, caricamento di file PDF (inclusa la gestione di errori I/O), salvataggio dei preferiti senza duplicati, lettura delle notifiche e ricerca/raccomandazione delle offerte.
+- **`ApplicationServiceImplTest`:** valida il flusso delle candidature — invio con o senza allegato, blocco delle candidature duplicate, controlli sull'appartenenza dei file al candidato, ritiro della candidatura, aggiornamento degli stati con invio automatico di notifiche e inserimento di note da parte dell'azienda.
+- **`ResumeServiceImplTest`:** verifica la gestione strutturata del curriculum — creazione e aggiornamento del profilo professionale, gestione di formazione, esperienze, competenze, progetti e certificazioni, operazioni su file (upload, download, eliminazione) e generazione dell'anteprima HTML.
+- **`EmployerServiceImplTest`:** copre la gestione del profilo aziendale (creazione, aggiornamento, validazione dell'email e conflitti), il recupero dei dati e il calcolo delle statistiche e della percentuale di completamento nella dashboard.
+- **`NotificationServiceImplTest`:** verifica la creazione e il salvataggio delle notifiche (controllando destinatario, messaggio e stato iniziale non letto), il recupero dello storico per utente e la marcatura come letta, inclusi i casi di utente o notifica assenti.
 ---
 
 ## 4. Integrazione CI/CD
