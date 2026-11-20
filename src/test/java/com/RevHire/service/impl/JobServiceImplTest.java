@@ -10,6 +10,7 @@ import com.RevHire.repository.EmployerProfileRepository;
 import com.RevHire.repository.JobRepository;
 import java.util.List;
 import java.util.Optional;
+import org.mockito.ArgumentCaptor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,7 +45,12 @@ class JobServiceImplTest {
     @Test void createJobSetsDefaults() {
         when(employerRepository.findByUserUserId(1L)).thenReturn(Optional.of(employer));
         when(jobRepository.save(any(Job.class))).thenAnswer(i -> i.getArgument(0));
+        ArgumentCaptor<Job> captor = ArgumentCaptor.forClass(Job.class);
         Job result = jobService.createJob(job, 1L);
+        verify(jobRepository).save(captor.capture());
+        assertEquals(employer,captor.getValue().getEmployer());
+        assertEquals("OPEN",captor.getValue().getStatus());
+        assertTrue(captor.getValue().getActive());
         assertEquals(employer, result.getEmployer());
         assertEquals("OPEN", result.getStatus());
         assertTrue(result.getActive());
@@ -98,12 +104,17 @@ class JobServiceImplTest {
 
     @Test void sortedBranchesNameRecentDefault() {
         when(employerRepository.findByUserUserId(1L)).thenReturn(Optional.of(employer));
-        when(jobRepository.findByEmployerEmployerIdOrderByTitleAsc(10L)).thenReturn(List.of(job));
-        when(jobRepository.findByEmployerEmployerIdOrderByJobIdDesc(10L)).thenReturn(List.of(job));
-        when(jobRepository.findByEmployerEmployerId(10L)).thenReturn(List.of(job));
-        assertEquals(1, jobService.getEmployerJobsSorted(1L, "NAME").size());
-        assertEquals(1, jobService.getEmployerJobsSorted(1L, "recent").size());
-        assertEquals(1, jobService.getEmployerJobsSorted(1L, "other").size());
+        Job beta = new Job(); beta.setJobId(102L); beta.setTitle("Beta"); beta.setEmployer(employer);
+        Job alpha = new Job(); alpha.setJobId(101L); alpha.setTitle("Alpha"); alpha.setEmployer(employer);
+        when(jobRepository.findByEmployerEmployerIdOrderByTitleAsc(10L)).thenReturn(List.of(alpha,beta));
+        when(jobRepository.findByEmployerEmployerIdOrderByJobIdDesc(10L)).thenReturn(List.of(beta,alpha));
+        when(jobRepository.findByEmployerEmployerId(10L)).thenReturn(List.of(beta,alpha));
+        List<JobDTO> byName = jobService.getEmployerJobsSorted(1L, "NAME");
+        assertEquals(List.of("Alpha","Beta"), List.of(byName.get(0).getTitle(),byName.get(1).getTitle()));
+        List<JobDTO> recent = jobService.getEmployerJobsSorted(1L, "recent");
+        assertEquals(List.of("Beta","Alpha"), List.of(recent.get(0).getTitle(),recent.get(1).getTitle()));
+        List<JobDTO> defaultOrder = jobService.getEmployerJobsSorted(1L, "other");
+        assertEquals(List.of("Beta","Alpha"), List.of(defaultOrder.get(0).getTitle(),defaultOrder.get(1).getTitle()));
         when(employerRepository.findByUserUserId(2L)).thenReturn(Optional.empty());
         assertThrows(RuntimeException.class, () -> jobService.getEmployerJobsSorted(2L, "name"));
     }
@@ -134,12 +145,19 @@ class JobServiceImplTest {
         updated.setTitle("Senior Developer"); updated.setLocation("Hybrid");
         updated.setJobType("CONTRACT"); updated.setDescription("Synthetic");
         updated.setExperienceRequired(5); updated.setEducationRequired("Degree");
+        updated.setSalaryMin(java.math.BigDecimal.valueOf(50000));
+        updated.setSalaryMax(java.math.BigDecimal.valueOf(90000));
         when(jobRepository.findById(100L)).thenReturn(Optional.of(job));
         when(jobRepository.save(job)).thenReturn(job);
         JobDTO result = jobService.updateJob(100L, updated);
         assertEquals("Senior Developer", result.getTitle());
         assertEquals("Hybrid", job.getLocation());
         assertEquals("CONTRACT", job.getJobType());
+        assertEquals(java.math.BigDecimal.valueOf(50000),job.getSalaryMin());
+        assertEquals(java.math.BigDecimal.valueOf(90000),job.getSalaryMax());
+        assertEquals("Synthetic",job.getDescription());
+        assertEquals(5,job.getExperienceRequired());
+        assertEquals("Degree",job.getEducationRequired());
         when(jobRepository.findById(101L)).thenReturn(Optional.empty());
         assertThrows(RuntimeException.class, () -> jobService.updateJob(101L, updated));
     }

@@ -135,18 +135,13 @@ public class ApplicationServiceImpl implements ApplicationService {
 
         app.setStatus(status);
         Application updated = applicationRepository.save(app);
-        Long seekerUserId = app.getSeeker().getUser().getUserId();
-        String message;
-
-        if(status.equals("SHORTLISTED")){
-            message = "Your application for " + app.getJob().getTitle() + " was SHORTLISTED";
-        }else if(status.equals("REJECTED")){
-            message = "Your application for " + app.getJob().getTitle() + " was REJECTED";
-        }else{
-            message = "Your application status updated to " + status;
+        if (status.equals("SHORTLISTED") || status.equals("REJECTED")) {
+            Long seekerUserId = app.getSeeker().getUser().getUserId();
+            String message = status.equals("SHORTLISTED")
+                    ? "Your application for " + app.getJob().getTitle() + " was SHORTLISTED"
+                    : "Your application for " + app.getJob().getTitle() + " was REJECTED";
+            notificationService.sendNotification(seekerUserId, message);
         }
-
-        notificationService.sendNotification(seekerUserId, message);
         Application updatedApplication = applicationRepository.save(app);
         logger.info("Application status updated successfully for applicationId: {}", applicationId);
 

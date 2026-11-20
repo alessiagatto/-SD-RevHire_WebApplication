@@ -56,8 +56,16 @@ class ApplicationServiceImplTest {
         stubValidApply();
         ResumeFile file = new ResumeFile(); file.setFileId(70L); file.setResume(resume);
         when(resumeFileRepository.findById(70L)).thenReturn(Optional.of(file));
+        ArgumentCaptor<Application> captor = ArgumentCaptor.forClass(Application.class);
         Application withFile = service.applyJob(100L,30L,50L,70L,"Cover");
         assertEquals("APPLIED", withFile.getStatus());
+        verify(applicationRepository, atLeastOnce()).save(captor.capture());
+        Application saved = captor.getAllValues().get(captor.getAllValues().size() - 1);
+        assertEquals(job, saved.getJob());
+        assertEquals(seeker, saved.getSeeker());
+        assertEquals(resume, saved.getResume());
+        assertEquals("Cover", saved.getCoverLetter());
+        assertEquals("APPLIED", saved.getStatus());
         verify(notificationService).sendNotification(20L,"Candidate applied for Developer");
         Application withoutFile = service.applyJob(100L,30L,50L,null,"Cover");
         assertNotNull(withoutFile);
@@ -114,17 +122,29 @@ class ApplicationServiceImplTest {
     @Test void updateStatusBranches() {
         when(applicationRepository.findById(60L)).thenReturn(Optional.of(application));
         when(applicationRepository.save(application)).thenReturn(application);
-        for (String status : List.of("SHORTLISTED","REJECTED","UNDER_REVIEW","APPLIED","WITHDRAWN")) {
+        Application shortlisted = service.updateStatus(60L,"SHORTLISTED");
+        assertEquals("SHORTLISTED", shortlisted.getStatus());
+        verify(notificationService).sendNotification(30L,"Your application for Developer was SHORTLISTED");
+
+        clearInvocations(notificationService);
+        Application rejected = service.updateStatus(60L,"REJECTED");
+        assertEquals("REJECTED", rejected.getStatus());
+        verify(notificationService).sendNotification(30L,"Your application for Developer was REJECTED");
+
+        clearInvocations(notificationService);
+        for (String status : List.of("UNDER_REVIEW","APPLIED","WITHDRAWN")) {
+            application.setStatus("APPLIED");
             Application result = service.updateStatus(60L,status);
             assertEquals(status,result.getStatus());
+            verifyNoInteractions(notificationService);
         }
         verify(applicationRepository,atLeastOnce()).save(application);
-        verify(notificationService,atLeastOnce()).sendNotification(eq(30L),anyString());
     }
 
     @Test void updateStatusErrorsAndInvalid() {
         when(applicationRepository.findById(60L)).thenReturn(Optional.empty());
-        assertThrows(RuntimeException.class, () -> service.updateStatus(60L,"APPLIED"));
+        RuntimeException missing = assertThrows(RuntimeException.class, () -> service.updateStatus(60L,"APPLIED"));
+        assertEquals("Application not found", missing.getMessage());
         when(applicationRepository.findById(60L)).thenReturn(Optional.of(application));
         assertEquals("Invalid status value", assertThrows(RuntimeException.class, () -> service.updateStatus(60L,"INVALID")).getMessage());
     }
@@ -147,6 +167,9 @@ class ApplicationServiceImplTest {
         assertEquals("Note added successfully",service.addEmployerNotes(60L,10L,"Synthetic note"));
         verify(applicationNoteRepository).save(captor.capture());
         assertEquals("Synthetic note",captor.getValue().getNoteText());
+        assertEquals(application,captor.getValue().getApplication());
+        assertEquals(employer,captor.getValue().getEmployer());
+        assertNotNull(captor.getValue().getCreatedAt());
         when(applicationRepository.findById(61L)).thenReturn(Optional.empty());
         assertThrows(RuntimeException.class, () -> service.addEmployerNotes(61L,10L,""));
         when(applicationRepository.findById(60L)).thenReturn(Optional.of(application));

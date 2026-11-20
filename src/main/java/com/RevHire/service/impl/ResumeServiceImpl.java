@@ -20,6 +20,7 @@ import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -326,11 +327,16 @@ public class ResumeServiceImpl implements ResumeService {
 
         JobSeekerProfile profile = profileRepo.findById(resume.getSeeker().getSeekerId()).orElseThrow(() -> new RuntimeException("JobSeeker profile not found"));
 
-        List<ResumeEducation> educations = educationRepo.findByResume_ResumeId(resumeId);
-        List<ResumeExperience> experiences = experienceRepo.findByResume_ResumeId(resumeId);
-        List<ResumeSkill> skills = skillRepo.findByResume_ResumeId(resumeId);
-        List<ResumeProject> projects = projectRepo.findByResumeResumeId(resumeId);
-        List<ResumeCertification> certs = certRepo.findByResumeResumeId(resumeId);
+        List<ResumeEducation> educations = Optional.ofNullable(
+                educationRepo.findByResume_ResumeId(resumeId)).orElse(List.of());
+        List<ResumeExperience> experiences = Optional.ofNullable(
+                experienceRepo.findByResume_ResumeId(resumeId)).orElse(List.of());
+        List<ResumeSkill> skills = Optional.ofNullable(
+                skillRepo.findByResume_ResumeId(resumeId)).orElse(List.of());
+        List<ResumeProject> projects = Optional.ofNullable(
+                projectRepo.findByResumeResumeId(resumeId)).orElse(List.of());
+        List<ResumeCertification> certs = Optional.ofNullable(
+                certRepo.findByResumeResumeId(resumeId)).orElse(List.of());
 
         StringBuilder html = new StringBuilder();
 

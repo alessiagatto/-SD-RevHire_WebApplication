@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -48,8 +49,10 @@ class JobSeekerServiceImplTest {
         when(profileRepo.save(profile)).thenReturn(profile);
         when(seekerRepository.save(profile)).thenReturn(profile);
         assertEquals(profile,service.createProfile(profile,1L)); assertEquals(user,profile.getUser());
+        verify(profileRepo).save(profile);
         when(userRepo.findById(2L)).thenReturn(Optional.empty());
-        assertThrows(RuntimeException.class,()->service.createProfile(profile,2L));
+        RuntimeException missingUser = assertThrows(RuntimeException.class,()->service.createProfile(profile,2L));
+        assertEquals("User not found with ID: 2",missingUser.getMessage());
     }
     @Test void getProfilePresentAndEmpty() {
         when(profileRepo.findByUserUserId(1L)).thenReturn(Optional.of(profile));
@@ -67,6 +70,10 @@ class JobSeekerServiceImplTest {
         when(profileRepo.save(profile)).thenReturn(profile);
         when(seekerRepository.save(profile)).thenReturn(profile);
         assertEquals("Updated",service.updateProfile(10L,update).getFullName());
+        assertEquals("x",profile.getPhone());
+        assertEquals("Here",profile.getLocation());
+        assertEquals("Available",profile.getCurrentEmploymentStatus());
+        assertEquals(90,profile.getProfileCompletion());
         assertEquals(5,profile.getTotalExperience());
         when(seekerRepository.findById(11L)).thenReturn(Optional.empty());
         when(profileRepo.findById(11L)).thenReturn(Optional.empty());
@@ -94,7 +101,14 @@ class JobSeekerServiceImplTest {
         when(file.getOriginalFilename()).thenReturn("candidate.pdf"); when(file.getSize()).thenReturn(100L);
         ResumeFile saved=new ResumeFile(); saved.setResume(resume);
         when(resumeFileRepo.save(any(ResumeFile.class))).thenAnswer(i->i.getArgument(0));
+        ArgumentCaptor<ResumeFile> captor=ArgumentCaptor.forClass(ResumeFile.class);
         ResumeFile result=service.uploadResumeFile(1L,file);
+        verify(resumeFileRepo).save(captor.capture());
+        assertEquals(resume,captor.getValue().getResume());
+        assertTrue(captor.getValue().getFileName().endsWith("_candidate.pdf"));
+        assertNotNull(captor.getValue().getFilePath());
+        assertEquals(100L,captor.getValue().getFileSize());
+        assertEquals("PDF",captor.getValue().getFileType());
         assertEquals(resume,result.getResume()); assertEquals("PDF",result.getFileType());
         verify(file).transferTo(any(java.io.File.class));
         doThrow(new IOException("disk")).when(file).transferTo(any(java.io.File.class));
@@ -109,7 +123,11 @@ class JobSeekerServiceImplTest {
         when(jobRepo.findById(20L)).thenReturn(Optional.of(job));
         when(favoriteJobRepo.existsBySeekerSeekerIdAndJobJobId(1L,20L)).thenReturn(false);
         when(favoriteJobRepo.save(any(FavoriteJob.class))).thenAnswer(i->i.getArgument(0));
+        ArgumentCaptor<FavoriteJob> captor=ArgumentCaptor.forClass(FavoriteJob.class);
         assertEquals(job,service.addFavoriteJob(1L,20L).getJob());
+        verify(favoriteJobRepo).save(captor.capture());
+        assertEquals(profile,captor.getValue().getSeeker());
+        assertEquals(job,captor.getValue().getJob());
         when(favoriteJobRepo.existsBySeekerSeekerIdAndJobJobId(1L,20L)).thenReturn(true);
         assertThrows(RuntimeException.class,()->service.addFavoriteJob(1L,20L));
         when(seekerRepository.findByUserUserId(2L)).thenReturn(Optional.empty());

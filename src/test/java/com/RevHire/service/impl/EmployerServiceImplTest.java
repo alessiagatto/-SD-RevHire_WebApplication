@@ -18,6 +18,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.ArgumentCaptor;
 import org.springframework.web.server.ResponseStatusException;
 
 @ExtendWith(MockitoExtension.class)
@@ -43,11 +44,24 @@ class EmployerServiceImplTest {
         when(employerProfileRepository.findByUserUserId(1L)).thenReturn(Optional.of(profile));
         when(userRepository.save(user)).thenReturn(user); when(employerProfileRepository.save(profile)).thenReturn(profile);
         assertEquals(dto,service.createOrUpdateProfile(1L,dto)); assertEquals("new@example.test",user.getEmail());
-        verify(employerProfileRepository).save(profile);
+        ArgumentCaptor<EmployerProfile> captor=ArgumentCaptor.forClass(EmployerProfile.class);
+        verify(employerProfileRepository).save(captor.capture());
+        assertEquals(user,captor.getValue().getUser());
+        assertEquals("Example",captor.getValue().getCompanyName());
+        assertEquals("Technology",captor.getValue().getIndustry());
+        assertEquals(50,captor.getValue().getCompanySize());
+        assertEquals("Synthetic",captor.getValue().getDescription());
+        assertEquals("https://example.test",captor.getValue().getWebsite());
+        assertEquals("Remote",captor.getValue().getLocation());
         when(employerProfileRepository.findByUserUserId(2L)).thenReturn(Optional.empty());
         when(userRepository.findById(2L)).thenReturn(Optional.of(new User()));
         EmployerProfileDTO noEmail=new EmployerProfileDTO(); noEmail.setCompanyName("New");
-        assertEquals(noEmail,service.createOrUpdateProfile(2L,noEmail));
+        EmployerProfileDTO created=service.createOrUpdateProfile(2L,noEmail);
+        assertEquals("New",created.getCompanyName());
+        ArgumentCaptor<EmployerProfile> newCaptor=ArgumentCaptor.forClass(EmployerProfile.class);
+        verify(employerProfileRepository,atLeastOnce()).save(newCaptor.capture());
+        EmployerProfile saved=newCaptor.getAllValues().get(newCaptor.getAllValues().size()-1);
+        assertEquals("New",saved.getCompanyName());
     }
     @Test void createOrUpdateNullEmptyEmailAndErrors() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));

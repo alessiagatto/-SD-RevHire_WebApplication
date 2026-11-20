@@ -16,6 +16,7 @@ import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -117,10 +118,20 @@ class ResumeServiceImplTest {
         when(file.getContentType()).thenReturn("application/pdf");
         when(file.getSize()).thenReturn(5L);
         when(file.getInputStream()).thenReturn(new ByteArrayInputStream("PDF".getBytes()));
+        ArgumentCaptor<ResumeFile> captor=ArgumentCaptor.forClass(ResumeFile.class);
         service.saveResumeFile(1L,file);
-        verify(resumeFileRepo).save(argThat(f->f.getFileName().equals("candidate.pdf") && f.getFileType().equals("PDF")));
+        verify(resumeFileRepo).save(captor.capture());
+        ResumeFile saved=captor.getValue();
+        assertEquals("candidate.pdf",saved.getFileName());
+        assertEquals("PDF",saved.getFileType());
+        assertEquals(5L,saved.getFileSize());
+        assertEquals(resume,saved.getResume());
+        assertNotNull(saved.getUploadedAt());
+        assertNotNull(saved.getFilePath());
+        assertTrue(saved.getFilePath().endsWith("candidate.pdf"));
         when(resumeRepo.findBySeeker_User_UserId(2L)).thenReturn(Optional.empty());
-        assertThrows(RuntimeException.class,()->service.saveResumeFile(2L,file));
+        RuntimeException missing=assertThrows(RuntimeException.class,()->service.saveResumeFile(2L,file));
+        assertEquals("Resume profile not found",missing.getMessage());
     }
 
     @Test void deleteResumeFileExistsAndMissing() {
@@ -172,6 +183,26 @@ class ResumeServiceImplTest {
         when(certRepo.findByResumeResumeId(100L)).thenReturn(List.of(cert));
         String html=service.generateResumeHtml(100L);
         assertTrue(html.contains("Candidate")); assertTrue(html.contains("Project")); assertTrue(html.contains("Java"));
+        assertTrue(html.contains("Degree")); assertTrue(html.contains("Engineer")); assertTrue(html.contains("Certificate"));
+
+        seeker.setFullName(null); seeker.setLocation(null); seeker.setPhone(null);
+        when(educationRepo.findByResume_ResumeId(100L)).thenReturn(List.of());
+        when(experienceRepo.findByResume_ResumeId(100L)).thenReturn(List.of());
+        when(skillRepo.findByResume_ResumeId(100L)).thenReturn(List.of());
+        when(projectRepo.findByResumeResumeId(100L)).thenReturn(List.of());
+        when(certRepo.findByResumeResumeId(100L)).thenReturn(List.of());
+        String emptyHtml=service.generateResumeHtml(100L);
+        assertTrue(emptyHtml.contains("Candidate"));
+        assertTrue(emptyHtml.contains("<h3>Education</h3>"));
+        assertFalse(emptyHtml.contains("<b>Project</b>"));
+        assertFalse(emptyHtml.contains("<p>Java</p>"));
+
+        when(educationRepo.findByResume_ResumeId(100L)).thenReturn(null);
+        when(experienceRepo.findByResume_ResumeId(100L)).thenReturn(null);
+        when(skillRepo.findByResume_ResumeId(100L)).thenReturn(null);
+        when(projectRepo.findByResumeResumeId(100L)).thenReturn(null);
+        when(certRepo.findByResumeResumeId(100L)).thenReturn(null);
+        assertNotNull(service.generateResumeHtml(100L));
         when(resumeRepo.findById(101L)).thenReturn(Optional.empty());
         assertThrows(RuntimeException.class,()->service.generateResumeHtml(101L));
         when(resumeRepo.findById(102L)).thenReturn(Optional.of(resume));
