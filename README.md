@@ -29,7 +29,7 @@ RevHire è un portale di ricerca del lavoro che mette in contatto **candidati** 
 
 - ✅ **Lab 1** – CI workflow → [CI.md](documentation/CI.md)
 - ✅ **Lab 2** – Docker e Docker compose → [Docker.md](documentation/Docker.md)
-
+- ✅ **Lab 3** – Unit Testing con JUnit e Mockito → [testing.md](documentation/testing.md)
 ---
 
 # ⚙️ Installazione
