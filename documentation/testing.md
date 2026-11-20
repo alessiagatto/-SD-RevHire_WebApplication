@@ -6,41 +6,49 @@ Questo documento descrive la strategia di test unitari, l'applicazione dei princ
 
 ## 1. Panoramica
 
-Il progetto disponeva già di una suite di test di base, ma si è scelto di potenziare e riscrivere in modo mirato i test del package `com.RevHire.service.impl`, lasciando invariati quelli già presenti negli altri package. Questa scelta deriva dal fatto che la logica di business, le validazioni critiche (duplicati, stati non validi, gestione file) e la gestione delle eccezioni risiedono nei *Service*, mentre `entity`/`dto` contengono solo strutture dati e i `repository` sono interfacce JPA già isolate tramite `@Mock`. In questo modo si massimizza l'affidabilità dei flussi critici mantenendo l'esecuzione veloce e indipendente da risorse esterne come il database Oracle o il filesystem reale.
+Il progetto disponeva già di una suite di test di base, ma si è scelto di potenziare e riscrivere in modo mirato i test del package `com.RevHire.service.impl`, lasciando invariati quelli degli altri package. La logica di business, le validazioni critiche (duplicati, stati non validi, gestione file) e la gestione delle eccezioni risiedono infatti nei *Service*, mentre `entity`/`dto` contengono solo strutture dati e i `repository` sono interfacce JPA isolate tramite `@Mock`. Così si garantisce l'affidabilità dei flussi critici con test veloci e indipendenti da risorse esterne come il database Oracle o il filesystem.
 
-L'infrastruttura di test si basa su due strumenti principali configurati in `pom.xml`:
-- **JUnit 6 (`junit-jupiter:6.1.3`)**
-- **Mockito 5 (`mockito-junit-jupiter:5.24.0`)**
+L'infrastruttura di test si basa su due strumenti configurati in `pom.xml`:
+- **JUnit 6** (`junit-jupiter:6.1.3`)
+- **Mockito 5** (`mockito-junit-jupiter:5.24.0`)
+
 ---
 
 ## 2. Principi FIRST e strategia di isolamento
 
-Tutte le classi di test utilizzano `@ExtendWith(MockitoExtension.class)` per mantenere l'esecuzione aderente ai principi **FIRST**:
+Tutte le classi di test usano `@ExtendWith(MockitoExtension.class)` per rispettare i principi **FIRST**:
 
-- **Fast (Veloce):** assenza di contesto Spring completo e di connessioni al database, con esecuzione in memoria nell'ordine dei millisecondi.
-- **Independent (Indipendente):** ogni metodo di test istanzia e configura i propri mock in isolamento, senza condividere stato mutabile con altri test.
-- **Repeatable (Ripetibile):** input deterministici e comportamento dei repository controllato tramite stubbing (`when(...).thenReturn(...)`), evitando dipendenze da rete, orologio o file locali.
-- **Self-validating (Autovalidante):** esito determinato automaticamente tramite asserzioni JUnit (`assertEquals`, `assertThrows`, `assertTrue`, `assertFalse`) e verifiche Mockito (`verify`).
-- **Thorough (Approfondito):** copertura dei flussi principali, dei rami condizionali, dei casi limite (valori nulli, vuoti o duplicati) e delle eccezioni, mantenendo aderenza al comportamento reale del codice di produzione.
+- **Fast:** nessun contesto Spring completo né connessione al database; esecuzione in memoria nell'ordine dei millisecondi.
+- **Independent:** ogni test configura i propri mock, senza condividere stato mutabile con altri test.
+- **Repeatable:** input deterministici e repository controllati tramite stubbing (`when(...).thenReturn(...)`), senza dipendere da rete, orologio o file locali.
+- **Self-validating:** esito stabilito automaticamente da asserzioni JUnit (`assertEquals`, `assertThrows`, ...) e verifiche Mockito (`verify`).
+- **Thorough:** copertura dei flussi principali, dei rami condizionali, dei casi limite (valori nulli, vuoti o duplicati) e delle eccezioni.
+
+### Un caso concreto: un test che falliva a intermittenza
+
+Durante le verifiche, un test di `JobSeekerServiceImplTest` non rispettava il principio *Repeatable*, poiché dava esiti diversi a parità di codice: in alcune esecuzioni passava, in altre falliva con l'errore "Seeker not found".
+
+La causa era nel modo in cui i mock venivano collegati al servizio. Il servizio ha due dipendenze dello stesso tipo, e l'annotazione `@InjectMocks` le assegnava in base al tipo e non al nome, quindi poteva scambiarle in modo imprevedibile. Il problema è stato risolto creando il servizio a mano nel metodo `setUp()`, passando ogni mock nel punto giusto.
 
 ---
 
 ## 3. Suite di test e casi coperti
 
-Le sette classi di test dei servizi applicativi sono state riviste per verificare non solo il funzionamento standard, ma anche i casi limite, le regole di validazione e la gestione degli errori:
+Le sette classi di test dei servizi che verificavano solo il funzionamento standard, ora verificano anche i casi limite, le regole di validazione e la gestione degli errori:
 
-- **`AuthServiceImplTest`:** copre l'intero ciclo di gestione dell'account — registrazione con controllo sui duplicati, autenticazione con verifica e aggiornamento automatico delle password cifrate, recupero/modifica delle credenziali e rimozione dell'utente, includendo i casi di dati errati o account inesistenti.
-- **`JobServiceImplTest`:** verifica la gestione completa delle offerte di lavoro — pubblicazione con valori predefiniti, consultazione e ricerca filtrata, modifica, cambio di stato (`OPEN` ↔ `CLOSED`), eliminazione, ordinamento e suggerimenti mirati, gestendo anche l'assenza dell'azienda o dell'offerta.
-- **`JobSeekerServiceImplTest`:** testa le funzionalità principali del candidato — gestione del profilo, creazione automatica del curriculum, caricamento di file PDF (inclusa la gestione di errori I/O), salvataggio dei preferiti senza duplicati, lettura delle notifiche e ricerca/raccomandazione delle offerte.
-- **`ApplicationServiceImplTest`:** valida il flusso delle candidature — invio con o senza allegato, blocco delle candidature duplicate, controlli sull'appartenenza dei file al candidato, ritiro della candidatura, aggiornamento degli stati con invio automatico di notifiche e inserimento di note da parte dell'azienda.
-- **`ResumeServiceImplTest`:** verifica la gestione strutturata del curriculum — creazione e aggiornamento del profilo professionale, gestione di formazione, esperienze, competenze, progetti e certificazioni, operazioni su file (upload, download, eliminazione) e generazione dell'anteprima HTML.
-- **`EmployerServiceImplTest`:** copre la gestione del profilo aziendale (creazione, aggiornamento, validazione dell'email e conflitti), il recupero dei dati e il calcolo delle statistiche e della percentuale di completamento nella dashboard.
-- **`NotificationServiceImplTest`:** verifica la creazione e il salvataggio delle notifiche (controllando destinatario, messaggio e stato iniziale non letto), il recupero dello storico per utente e la marcatura come letta, inclusi i casi di utente o notifica assenti.
+- **`AuthServiceImplTest`:** registrazione con controllo dei duplicati, autenticazione con aggiornamento delle password cifrate, recupero/modifica delle credenziali, rimozione dell'utente; casi di dati errati o account inesistenti.
+- **`JobServiceImplTest`:** pubblicazione con valori predefiniti, ricerca filtrata, modifica, cambio di stato (`OPEN` ↔ `CLOSED`), eliminazione, ordinamento e suggerimenti; assenza di azienda o offerta.
+- **`JobSeekerServiceImplTest`:** profilo del candidato, creazione automatica del curriculum, caricamento PDF (con errori I/O), preferiti senza duplicati, notifiche, ricerca e raccomandazione delle offerte.
+- **`ApplicationServiceImplTest`:** invio candidature con o senza allegato, blocco dei duplicati, controllo di appartenenza dei file, ritiro, aggiornamento stati con notifiche automatiche e note dell'azienda.
+- **`ResumeServiceImplTest`:** creazione e aggiornamento del curriculum (formazione, esperienze, competenze, progetti, certificazioni), operazioni sui file e anteprima HTML.
+- **`EmployerServiceImplTest`:** profilo aziendale (creazione, aggiornamento, validazione email, conflitti), statistiche e percentuale di completamento della dashboard.
+- **`NotificationServiceImplTest`:** creazione e salvataggio delle notifiche (destinatario, messaggio, stato non letto), storico per utente e marcatura come letta, con utente o notifica assenti.
+
 ---
 
 ## 4. Integrazione CI/CD
 
-L'esecuzione della suite è automatizzata nella pipeline **CI/CD** (`.github/workflows/ci.yml`) su runner `ubuntu-latest` con **JDK 21** tramite Maven (`mvn clean test -Dspring.profiles.active=test`):
+La suite è eseguita nella pipeline **CI/CD** (`.github/workflows/ci.yml`) su `ubuntu-latest` con **JDK 21** tramite Maven (`mvn clean test -Dspring.profiles.active=test`):
 
-- **Quality gate:** qualsiasi fallimento nei test interrompe immediatamente la pipeline e blocca la generazione dell'artefatto JAR e il successivo workflow Docker.
-- **Tracciabilità:** i report XML/testuali generati da Surefire vengono archiviati in `target/surefire-reports/`.
+- **Quality gate:** un test fallito interrompe la pipeline e blocca la generazione del JAR e il successivo workflow Docker.
+- **Tracciabilità:** i report di Surefire sono archiviati in `target/surefire-reports/`.

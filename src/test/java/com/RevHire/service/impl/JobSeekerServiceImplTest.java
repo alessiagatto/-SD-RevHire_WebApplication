@@ -32,10 +32,11 @@ class JobSeekerServiceImplTest {
     @Mock JobRepository jobRepo;
     @Mock ResumeSkillRepository resumeSkillRepo;
     @Mock JobSeekerProfileRepository seekerRepository;
-    @InjectMocks JobSeekerServiceImpl service;
+    JobSeekerServiceImpl service;
 
     private User user; private JobSeekerProfile profile; private Job job;
     @BeforeEach void setUp() {
+        service = new JobSeekerServiceImpl(profileRepo, resumeRepo, resumeFileRepo, favoriteJobRepo, notificationRepo, userRepo, jobRepo, resumeSkillRepo, seekerRepository);
         user=new User(); user.setUserId(1L); user.setEmail("candidate@example.test");
         profile=new JobSeekerProfile(); profile.setSeekerId(10L); profile.setFullName("Candidate"); profile.setUser(user);
         job=new Job(); job.setJobId(20L); job.setTitle("Java Developer"); job.setLocation("Remote");
