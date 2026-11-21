@@ -1,5 +1,4 @@
 .git/
-target/
 uploads/
 documentation/
 .env
