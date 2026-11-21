@@ -1,0 +1,36 @@
+name: Mutation Testing (PITest)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mutation-test:
+    runs-on: ubuntu-latest
+    name: Run PITest Mutation Testing with Java 21
+
+    env:
+      SPRING_PROFILES_ACTIVE: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Cache Maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Run PITest mutation coverage
+        run: ./mvnw org.pitest:pitest-maven:mutationCoverage
+        continue-on-error: true
